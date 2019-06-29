@@ -11,9 +11,9 @@ import java.util.stream.Collectors;
 public class SubSetStreamResult<T> {
 
     private final List<T> list;
-    private final List<TrackedVariable> tracked;
+    private final List<Measurement> tracked;
 
-    private SubSetStreamResult(List<T> list, List<TrackedVariable> tracked) {
+    SubSetStreamResult(List<T> list, List<Measurement> tracked) {
         this.list = list;
         this.tracked = tracked;
     }
@@ -22,7 +22,7 @@ public class SubSetStreamResult<T> {
         return list;
     }
 
-    public List<TrackedVariable> getTracked() {
+    public List<Measurement> getTracked() {
         return tracked;
     }
 
@@ -48,14 +48,14 @@ public class SubSetStreamResult<T> {
                 '}';
     }
 
-    static class Builder<T> {
+    static class Builder<T extends Number> {
         private final int subsetSize;
-        private final List<Tuple<List<T>, List<VariableTracker>>> resultList;
-        private final List<VariableTracker> toTrack;
+        private final List<Subset<T>> resultList;
+        private final List<Trackable<?, T>> toTrack;
         private int activeArrayIndexFloor;
         private int activeArrayIndexCeiling;
 
-        public Builder(int subsetSize, List<VariableTracker> toTrack) {
+        public Builder(int subsetSize, List<Trackable<?, T>> toTrack) {
             this.subsetSize = subsetSize;
             this.activeArrayIndexFloor = 0;
             this.activeArrayIndexCeiling = activeArrayIndexFloor + subsetSize;
@@ -66,27 +66,29 @@ public class SubSetStreamResult<T> {
         public void add(T newValue) {
             for (int i = activeArrayIndexFloor; i < activeArrayIndexCeiling; i++) {
                 if (i < resultList.size()) {
-                    Tuple<List<T>, List<VariableTracker>> tuple = resultList.get(i);
-                    List<T> activeArray = tuple.getA();
+                    Subset<T> data = resultList.get(i);
+                    List<T> activeArray = data.getSet();
                     activeArray.add(newValue);
-                    resultList.set(i, new Tuple<>(activeArray, tuple.getB().stream()
-                            .map(variableTracker -> {
-                                VariableTracker newInstance = variableTracker.newInstance();
-                                newInstance.add(newValue);
-                                return newInstance;
-                            })
-                            .collect(Collectors.toList())));
+                    resultList.set(i, new Subset<>(activeArray,
+                            data.getTracked().stream()
+                                    .map(trackable -> {
+                                        Trackable<?, T> newInstance = trackable.deepCopy();
+                                        newInstance.add(newValue);
+                                        return newInstance;
+                                    })
+                                    .collect(Collectors.toList()))
+                    );
                 } else {
                     List<T> activeArray = new ArrayList<>();
                     activeArray.add(newValue);
-                    List<VariableTracker> variableTrackers = toTrack.stream()
-                            .map(variableTracker -> {
-                                VariableTracker newInstance = variableTracker.newInstance();
+                    List<Trackable<?, T>> trackables = toTrack.stream()
+                            .map(trackable -> {
+                                Trackable<?, T> newInstance = trackable.deepCopy();
                                 newInstance.add(newValue);
                                 return newInstance;
                             })
                             .collect(Collectors.toList());
-                    resultList.add(new Tuple<>(activeArray, variableTrackers));
+                    resultList.add(new Subset<>(activeArray, trackables));
                 }
             }
             activeArrayIndexFloor++;
@@ -95,10 +97,12 @@ public class SubSetStreamResult<T> {
 
         public List<SubSetStreamResult<T>> build() {
             return resultList.stream()
-                    .filter(it -> it.getA().size() == subsetSize)
-                    .map(it -> new SubSetStreamResult<>(it.getA(), it.getB().stream()
-                            .map(VariableTracker::finalise)
-                            .collect(Collectors.toList())))
+                    .filter(it -> it.getSet().size() == subsetSize)
+                    .map(it -> {
+                        return new SubSetStreamResult<>(it.getSet(), it.getTracked().stream()
+                                .map(tracked -> tracked.evaluate(it.getSet()))
+                                .collect(Collectors.toList()));
+                    })
                     .collect(Collectors.toList());
         }
 

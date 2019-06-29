@@ -6,12 +6,12 @@ import java.util.Objects;
 /**
  * @author <a href="https://github.com/ferenc4">Ferenc Fazekas</a>
  */
-public class TrackedVariable {
+public class Measurement {
 
     private final String name;
     private final BigDecimal value;
 
-    public TrackedVariable(String name, BigDecimal value) {
+    public Measurement(String name, BigDecimal value) {
         this.name = name;
         this.value = value;
     }
@@ -26,7 +26,7 @@ public class TrackedVariable {
 
     @Override
     public String toString() {
-        return "TrackedVariable{" +
+        return "Measurement{" +
                 "name='" + name + '\'' +
                 ", value=" + value +
                 '}';
@@ -36,7 +36,7 @@ public class TrackedVariable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        TrackedVariable that = (TrackedVariable) o;
+        Measurement that = (Measurement) o;
         return getName().equals(that.getName()) &&
                 getValue().equals(that.getValue());
     }

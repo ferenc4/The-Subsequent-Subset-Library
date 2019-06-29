@@ -2,7 +2,6 @@ package subset;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -10,10 +9,10 @@ import java.util.stream.Stream;
 /**
  * @author <a href="https://github.com/ferenc4">Ferenc Fazekas</a>
  */
-public class SubsetStream<N> {
+public class SubsetStream<N extends Number> {
     private final Stream<N> stream;
     private final int subsetSize;
-    private final List<VariableTracker> tracked;
+    private final List<Trackable<?, N>> tracked;
 
     public SubsetStream(Stream<N> stream, int subsetSize) {
         this.stream = stream;
@@ -21,23 +20,16 @@ public class SubsetStream<N> {
         this.tracked = new ArrayList<>();
     }
 
-    private SubsetStream(Stream<N> stream, int subsetSize, List<VariableTracker> tracked) {
-        this.stream = stream;
-        this.subsetSize = subsetSize;
-        this.tracked = tracked;
-    }
-
     public SubsetStream<N> filter(Predicate<? super N> predicate) {
         return new SubsetStream<>(stream.filter(predicate), subsetSize);
     }
 
-    public <V> SubsetStream<N> track(String variableName, V initValue, BiFunction<V, N, V> accumulator,
-                                     Function<V, TrackedVariable> combiner) {
-        tracked.add(new VariableTracker<>(variableName, initValue, accumulator, combiner));
+    public SubsetStream<N> track(Trackable<?, N> trackable) {
+        tracked.add(trackable);
         return this;
     }
 
-    public <R> SubsetStream<R> map(Function<? super N, ? extends R> mapper) {
+    public <R extends Number> SubsetStream<R> map(Function<? super N, ? extends R> mapper) {
         return new SubsetStream<>(stream.map(mapper), subsetSize);
     }
 
