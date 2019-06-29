@@ -6,6 +6,7 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -40,10 +41,9 @@ public class SubsetStreamTest {
 
     @Test
     public void testTrackedVariableMean() {
-        List<Integer> source = Arrays.asList(5, 3, 94, 83, 7, 97, 83, 12, 57);
+        List<Integer> source = Arrays.asList(5, 3, 7);
         int subsetSize = 3;
         List<SubSetStreamResult<Integer>> actual = new SubsetStream<>(source.stream(), subsetSize)
-                .filter(it -> it < 10)
                 .track("mean", 0,
                         (Integer runningSum, Integer newValue) -> {
                             runningSum += newValue;
@@ -53,17 +53,17 @@ public class SubsetStreamTest {
                                 .divide(BigDecimal.valueOf(subsetSize)))
                 )
                 .collect();
-        assertEquals(actual.size(), 1);
-        assertEquals(actual.get(0).getList(), Arrays.asList(5, 3, 7));
-        assertEquals(actual.get(0).getTracked(), singletonList(new TrackedVariable("mean", BigDecimal.valueOf(5))));
+        assertEquals(1, actual.size());
+        assertEquals(Arrays.asList(5, 3, 7), actual.get(0).getList());
+        assertEquals(singletonList(new TrackedVariable("mean", BigDecimal.valueOf(5))),
+                actual.get(0).getTracked());
     }
 
     @Test
     public void testTrackedVariableMedian() {
-        List<Integer> source = Arrays.asList(5, 3, 94, 83, 7, 97, 83, 12, 57);
+        List<Integer> source = Arrays.asList(5, 3, 7);
         int subsetSize = 3;
         List<SubSetStreamResult<Integer>> actual = new SubsetStream<>(source.stream(), subsetSize)
-                .filter(it -> it < 10)
                 .track("median", new ArrayList<>(),
                         (List<Integer> accu, Integer newValue) -> {
                             accu.add(newValue);
@@ -83,8 +83,51 @@ public class SubsetStreamTest {
                         }
                 )
                 .collect();
-        assertEquals(actual.size(), 1);
-        assertEquals(actual.get(0).getList(), Arrays.asList(5, 3, 7));
-        assertEquals(actual.get(0).getTracked(), singletonList(new TrackedVariable("median", BigDecimal.valueOf(5))));
+        assertEquals(1, actual.size());
+        assertEquals(Arrays.asList(5, 3, 7), actual.get(0).getList());
+        assertEquals(singletonList(new TrackedVariable("median", BigDecimal.valueOf(5))),
+                actual.get(0).getTracked());
+    }
+
+    @Test
+    public void test2TrackedVariablesWithFilter() {
+        List<Integer> source = Arrays.asList(1, 3, 94, 83, 7, 97, 83, 12, 57);
+        int subsetSize = 3;
+        List<SubSetStreamResult<Integer>> actual = new SubsetStream<>(source.stream(), subsetSize)
+                .filter(it -> it < 10)
+                .track("mean", 0,
+                        (Integer runningSum, Integer newValue) -> {
+                            runningSum += newValue;
+                            return runningSum;
+                        },
+                        (Integer runningSum) -> new TrackedVariable("mean", BigDecimal.valueOf(runningSum)
+                                .divide(BigDecimal.valueOf(subsetSize), 3, RoundingMode.HALF_EVEN))
+                )
+                .track("median", new ArrayList<>(),
+                        (List<Integer> accu, Integer newValue) -> {
+                            accu.add(newValue);
+                            return accu;
+                        },
+                        (List<Integer> values) -> {
+                            Collections.sort(values);
+                            BigDecimal result;
+                            if (values.size() % 2 == 0) {
+                                result = BigDecimal.valueOf(values.get((values.size() - 1) / 2))
+                                        .add(BigDecimal.valueOf(values.get((values.size() - 1) / 2)))
+                                        .divide(BigDecimal.valueOf(2));
+                            } else {
+                                result = BigDecimal.valueOf(values.get((values.size() - 1) / 2));
+                            }
+                            return new TrackedVariable("median", result);
+                        }
+                )
+                .collect();
+        assertEquals(1, actual.size());
+        assertEquals(Arrays.asList(1, 3, 7), actual.get(0).getList());
+        assertEquals(Arrays.asList(
+                new TrackedVariable("mean", BigDecimal.valueOf(3.667)),
+                new TrackedVariable("median", BigDecimal.valueOf(3))
+                ),
+                actual.get(0).getTracked());
     }
 }
