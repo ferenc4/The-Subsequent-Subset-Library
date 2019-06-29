@@ -8,9 +8,9 @@ import java.util.function.Function;
  */
 public class VariableTracker<V, N> {
     private final String name;
-    private V runningValue;
+    final Function<V, TrackedVariable> combiner;
     private final BiFunction<V, N, V> accumulator;
-    private final Function<V, TrackedVariable> combiner;
+    V runningValue;
 
     VariableTracker(String name, V initValue, BiFunction<V, N, V> accumulator, Function<V, TrackedVariable> combiner) {
         this.runningValue = initValue;
