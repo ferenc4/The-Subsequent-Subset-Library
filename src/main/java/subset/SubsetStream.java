@@ -32,9 +32,8 @@ public class SubsetStream<N> {
     }
 
     public <V> SubsetStream<N> track(String variableName, V initValue, BiFunction<V, N, V> accumulator,
-                                     Function<V, TrackedVariable> combiner,
-                                     Class<V> runningClass, Class<N> newValClass) {
-        tracked.add(new VariableTracker<>(variableName, initValue, accumulator, combiner, runningClass, newValClass));
+                                     Function<V, TrackedVariable> combiner) {
+        tracked.add(new VariableTracker<>(variableName, initValue, accumulator, combiner));
         return this;
     }
 

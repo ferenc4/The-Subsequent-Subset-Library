@@ -1,7 +1,9 @@
 package subset;
 
-import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -15,6 +17,28 @@ public class SubSetStreamResult<T> {
     private SubSetStreamResult(ArrayList<ArrayList<T>> list, List<TrackedVariable> tracked) {
         this.list = list;
         this.tracked = tracked;
+    }
+
+    public ArrayList<ArrayList<T>> getList() {
+        return list;
+    }
+
+    public List<TrackedVariable> getTracked() {
+        return tracked;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SubSetStreamResult<?> that = (SubSetStreamResult<?>) o;
+        return getList().equals(that.getList()) &&
+                getTracked().equals(that.getTracked());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getList(), getTracked());
     }
 
     @Override
@@ -35,19 +59,20 @@ public class SubSetStreamResult<T> {
         public Builder(int subsetSize, Set<VariableTracker> tracked) {
             this.subsetSize = subsetSize;
             this.activeArrayIndexFloor = 0;
-            this.activeArrayIndexCeiling = activeArrayIndexFloor + subsetSize + 1;
+            this.activeArrayIndexCeiling = activeArrayIndexFloor + subsetSize;
             this.tracked = tracked;
             this.resultList = new ArrayList<>();
         }
 
         public void add(T newValue) {
             for (int i = activeArrayIndexFloor; i < activeArrayIndexCeiling; i++) {
-                if (resultList.size() > i) {
+                if (i < resultList.size()) {
                     ArrayList<T> activeArray = resultList.get(i);
                     activeArray.add(newValue);
                     resultList.set(i, activeArray);
                 } else {
                     ArrayList<T> activeArray = new ArrayList<>();
+                    activeArray.add(newValue);
                     resultList.add(activeArray);
                 }
             }
