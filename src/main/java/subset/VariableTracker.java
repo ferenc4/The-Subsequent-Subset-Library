@@ -26,4 +26,8 @@ public class VariableTracker<V, N> {
     public TrackedVariable finalise() {
         return combiner.apply(runningValue);
     }
+
+    public VariableTracker<V, N> newInstance() {
+        return new VariableTracker<>(name, runningValue, accumulator, combiner);
+    }
 }

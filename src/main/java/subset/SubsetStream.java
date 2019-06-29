@@ -1,7 +1,7 @@
 package subset;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -13,15 +13,15 @@ import java.util.stream.Stream;
 public class SubsetStream<N> {
     private final Stream<N> stream;
     private final int subsetSize;
-    private final Set<VariableTracker> tracked;
+    private final List<VariableTracker> tracked;
 
     public SubsetStream(Stream<N> stream, int subsetSize) {
         this.stream = stream;
         this.subsetSize = subsetSize;
-        this.tracked = new HashSet<>();
+        this.tracked = new ArrayList<>();
     }
 
-    private SubsetStream(Stream<N> stream, int subsetSize, Set<VariableTracker> tracked) {
+    private SubsetStream(Stream<N> stream, int subsetSize, List<VariableTracker> tracked) {
         this.stream = stream;
         this.subsetSize = subsetSize;
         this.tracked = tracked;
@@ -41,7 +41,7 @@ public class SubsetStream<N> {
         return new SubsetStream<>(stream.map(mapper), subsetSize);
     }
 
-    public SubSetStreamResult<N> collect() {
+    public List<SubSetStreamResult<N>> collect() {
         SubSetStreamResult.Builder<N> builder = new SubSetStreamResult.Builder<>(subsetSize, tracked);
         stream.forEach(builder::add);
         return builder.build();

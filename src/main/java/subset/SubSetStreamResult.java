@@ -3,7 +3,6 @@ package subset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -11,15 +10,15 @@ import java.util.stream.Collectors;
  */
 public class SubSetStreamResult<T> {
 
-    private final ArrayList<ArrayList<T>> list;
+    private final List<T> list;
     private final List<TrackedVariable> tracked;
 
-    private SubSetStreamResult(ArrayList<ArrayList<T>> list, List<TrackedVariable> tracked) {
+    private SubSetStreamResult(List<T> list, List<TrackedVariable> tracked) {
         this.list = list;
         this.tracked = tracked;
     }
 
-    public ArrayList<ArrayList<T>> getList() {
+    public List<T> getList() {
         return list;
     }
 
@@ -51,44 +50,56 @@ public class SubSetStreamResult<T> {
 
     static class Builder<T> {
         private final int subsetSize;
-        private final ArrayList<ArrayList<T>> resultList;
-        private final Set<VariableTracker> tracked;
+        private final List<Tuple<List<T>, List<VariableTracker>>> resultList;
+        private final List<VariableTracker> toTrack;
         private int activeArrayIndexFloor;
         private int activeArrayIndexCeiling;
 
-        public Builder(int subsetSize, Set<VariableTracker> tracked) {
+        public Builder(int subsetSize, List<VariableTracker> toTrack) {
             this.subsetSize = subsetSize;
             this.activeArrayIndexFloor = 0;
             this.activeArrayIndexCeiling = activeArrayIndexFloor + subsetSize;
-            this.tracked = tracked;
+            this.toTrack = toTrack;
             this.resultList = new ArrayList<>();
         }
 
         public void add(T newValue) {
             for (int i = activeArrayIndexFloor; i < activeArrayIndexCeiling; i++) {
                 if (i < resultList.size()) {
-                    ArrayList<T> activeArray = resultList.get(i);
+                    Tuple<List<T>, List<VariableTracker>> tuple = resultList.get(i);
+                    List<T> activeArray = tuple.getA();
                     activeArray.add(newValue);
-                    resultList.set(i, activeArray);
+                    resultList.set(i, new Tuple<>(activeArray, tuple.getB().stream()
+                            .map(variableTracker -> {
+                                VariableTracker newInstance = variableTracker.newInstance();
+                                newInstance.add(newValue);
+                                return newInstance;
+                            })
+                            .collect(Collectors.toList())));
                 } else {
-                    ArrayList<T> activeArray = new ArrayList<>();
+                    List<T> activeArray = new ArrayList<>();
                     activeArray.add(newValue);
-                    resultList.add(activeArray);
+                    List<VariableTracker> variableTrackers = toTrack.stream()
+                            .map(variableTracker -> {
+                                VariableTracker newInstance = variableTracker.newInstance();
+                                newInstance.add(newValue);
+                                return newInstance;
+                            })
+                            .collect(Collectors.toList());
+                    resultList.add(new Tuple<>(activeArray, variableTrackers));
                 }
             }
             activeArrayIndexFloor++;
             activeArrayIndexCeiling++;
         }
 
-        public SubSetStreamResult<T> build() {
-            return new SubSetStreamResult<>(
-                    new ArrayList<>(resultList.stream()
-                            .filter(it -> it.size() == subsetSize)
-                            .collect(Collectors.toList())),
-                    tracked.stream()
+        public List<SubSetStreamResult<T>> build() {
+            return resultList.stream()
+                    .filter(it -> it.getA().size() == subsetSize)
+                    .map(it -> new SubSetStreamResult<>(it.getA(), it.getB().stream()
                             .map(VariableTracker::finalise)
-                            .collect(Collectors.toList())
-            );
+                            .collect(Collectors.toList())))
+                    .collect(Collectors.toList());
         }
 
         @Override
