@@ -1,4 +1,4 @@
-package subset;
+package stream;
 
 import java.util.List;
 import java.util.Objects;
@@ -7,6 +7,7 @@ import java.util.Objects;
  * @author <a href="https://github.com/ferenc4">Ferenc Fazekas</a>
  */
 public class Subset<T extends Number> {
+
     private final List<T> set;
     private final List<Trackable<?, T>> tracked;
 

@@ -1,4 +1,4 @@
-package subset;
+package stream;
 
 import java.util.List;
 

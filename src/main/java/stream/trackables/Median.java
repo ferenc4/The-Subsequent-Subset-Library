@@ -1,7 +1,7 @@
-package subset.trackables;
+package stream.trackables;
 
-import subset.Measurement;
-import subset.Trackable;
+import stream.Measurement;
+import stream.Trackable;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;

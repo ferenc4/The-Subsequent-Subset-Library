@@ -1,8 +1,8 @@
-package subset;
+package stream;
 
 import org.junit.Test;
-import subset.trackables.Mean;
-import subset.trackables.Median;
+import stream.trackables.Mean;
+import stream.trackables.Median;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -58,6 +58,19 @@ public class SubsetStreamTest {
         List<Measurement> expected = singletonList(new Measurement("median", BigDecimal.valueOf(5)));
         assertEquals(1, actual.size());
         assertEquals(Arrays.asList(5, 3, 7), actual.get(0).getList());
+        assertEquals(expected, actual.get(0).getTracked());
+    }
+
+    @Test
+    public void testTrackedVariableMedianForEvenCount() {
+        int subsetSize = 4;
+        List<SubSetStreamResult<Integer>> actual = new SubsetStream<>(Stream.of(5, 3, 7, 1), subsetSize)
+                .track(new Median<>())
+                .collect();
+        List<Measurement> expected = singletonList(new Measurement("median", BigDecimal.valueOf(4)
+                .setScale(3, HALF_EVEN)));
+        assertEquals(1, actual.size());
+        assertEquals(Arrays.asList(5, 3, 7, 1), actual.get(0).getList());
         assertEquals(expected, actual.get(0).getTracked());
     }
 
